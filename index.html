@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fish Friends — Tank Compatibility</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<aside id="panel">
+  <header>
+    <h1>Fish Friends</h1>
+    <p class="subtitle">Who can share a tank?</p>
+  </header>
+
+  <div id="legend">
+    <span class="chip"><i class="dot g"></i>Compatible</span>
+    <span class="chip"><i class="dot y"></i>Maybe</span>
+    <span class="chip"><i class="dot r"></i>Incompatible</span>
+  </div>
+
+  <h2>Fish Store</h2>
+  <div id="store"></div>
+  <button id="clear" type="button">Return all fish to the store</button>
+
+  <h2>Tank Report</h2>
+  <ul id="report"></ul>
+
+  <p class="hint">Drag a fish from the store into the tank — or just click it. While holding a fish, the lines show how it gets along with everyone else. Drag a fish back to this panel (or double-click it) to remove it. Click a report row to spotlight that pair.</p>
+  <p class="source">Data from the species compatibility chart: green = compatible, yellow = maybe, red = incompatible. Same-species shoals are treated as compatible.</p>
+</aside>
+
+<main id="stage">
+  <div id="banner" class="state-empty">Your tank is empty — add fish from the store</div>
+  <div id="tank"><div id="tank-canvas"></div></div>
+</main>
+
+<img id="ghost" alt="" hidden>
+<script src="p5.min.js"></script>
+<script src="sketch.js"></script>
+</body>
+</html>
