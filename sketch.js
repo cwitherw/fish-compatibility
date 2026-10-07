@@ -5,18 +5,31 @@ const VERDICTS = {
 };
 
 const SPECIES = [
-  { name: 'Angelfish',              body: [215, 222, 233], fin: [168, 184, 202], pattern: 'vstripes',     pc: [34, 40, 47],    shape: 'tall',     size: 44, speed: 0.50, iscale: 0.50, band: [0.14, 0.80], row: 'GGRRRGGRYRGR' },
-  { name: 'Barb',                   body: [240, 166, 60],  fin: [214, 128, 42],  pattern: 'vstripes',     pc: [35, 39, 44],    shape: 'standard', size: 32, speed: 0.90, iscale: 0.62, band: [0.14, 0.82], row: 'GGRYRGGYYRGY' },
-  { name: 'Betta',                  body: [184, 50, 62],   fin: [138, 34, 54],   pattern: 'none',         pc: [0, 0, 0],       shape: 'flow',     size: 34, speed: 0.45, iscale: 0.60, band: [0.14, 0.82], row: 'RRYRRGGRRRRG' },
-  { name: 'African Cichlid',        body: [77, 143, 209],  fin: [45, 106, 165],  pattern: 'vstripes',     pc: [27, 74, 122],   shape: 'standard', size: 34, speed: 0.75, iscale: 0.62, band: [0.14, 0.82], row: 'RYRYYRRRYRRR' },
-  { name: 'South American Cichlid', body: [138, 154, 91],  fin: [107, 122, 68],  pattern: 'blotches',     pc: [83, 95, 56],    shape: 'standard', size: 40, speed: 0.60, iscale: 0.58, band: [0.14, 0.80], row: 'RRRYYRRRYRRR' },
-  { name: 'Cory Catfish',           body: [193, 154, 107], fin: [160, 124, 80],  pattern: 'spots',        pc: [136, 104, 64],  shape: 'cat',      size: 30, speed: 0.60, iscale: 0.66, band: [0.58, 0.86], row: 'GGGRRGGGYRGG' },
-  { name: 'Danio / Minnow',         body: [184, 207, 224], fin: [141, 174, 198], pattern: 'hstripes',     pc: [44, 71, 99],    shape: 'slim',     size: 28, speed: 1.10, iscale: 0.70, band: [0.10, 0.55], row: 'GGGRRGGRYRGG' },
-  { name: 'Discus',                 body: [232, 134, 46],  fin: [199, 104, 28],  pattern: 'vstripesThin', pc: [31, 143, 122],  shape: 'round',    size: 42, speed: 0.35, iscale: 0.55, band: [0.14, 0.80], row: 'RYRRRGRGYRYR' },
-  { name: 'Eel',                    body: [95, 114, 100],  fin: [72, 88, 77],    pattern: 'bands',        pc: [55, 68, 58],    shape: 'eel',      size: 40, speed: 0.50, iscale: 0.60, band: [0.60, 0.84], row: 'YYRYYYYYYRYY' },
-  { name: 'Goldfish',               body: [243, 156, 44],  fin: [247, 181, 86],  pattern: 'none',         pc: [0, 0, 0],       shape: 'flow',     size: 38, speed: 0.50, iscale: 0.55, band: [0.14, 0.82], row: 'RRRRRRRRRGRR' },
-  { name: 'Gourami',                body: [201, 182, 217], fin: [165, 145, 187], pattern: 'spots',        pc: [244, 238, 250], shape: 'standard', size: 34, speed: 0.45, iscale: 0.62, band: [0.12, 0.78], row: 'GGRRRGGYYRYY' },
-  { name: 'Guppy',                  body: [79, 195, 161],  fin: [242, 140, 59],  pattern: 'tailspots',    pc: [211, 84, 0],    shape: 'slim',     size: 24, speed: 1.00, iscale: 0.78, band: [0.12, 0.78], row: 'RYGRRGGRYRYG' }
+  { name: 'Angelfish',              body: [215, 222, 233], fin: [168, 184, 202], pattern: 'vstripes',     pc: [34, 40, 47],    shape: 'tall',     size: 44, speed: 0.50, iscale: 0.50, band: [0.14, 0.80], row: 'GGRRRGGRYRGRRGGRGGGGGGGYG' },
+  { name: 'Barb',                   body: [240, 166, 60],  fin: [214, 128, 42],  pattern: 'vstripes',     pc: [35, 39, 44],    shape: 'standard', size: 32, speed: 0.90, iscale: 0.62, band: [0.14, 0.82], row: 'GGRYRGGYYRGYRGGRGGGGGGGYG' },
+  { name: 'Betta',                  body: [184, 50, 62],   fin: [138, 34, 54],   pattern: 'none',         pc: [0, 0, 0],       shape: 'flow',     size: 34, speed: 0.45, iscale: 0.60, band: [0.14, 0.82], row: 'RRYRRGGRRRRGRYGRGGGGRGGYG' },
+  { name: 'African Cichlid',        body: [77, 143, 209],  fin: [45, 106, 165],  pattern: 'vstripes',     pc: [27, 74, 122],   shape: 'standard', size: 34, speed: 0.75, iscale: 0.62, band: [0.14, 0.82], row: 'RYRYYRRRYRRRRYRYRYRRYRRYG' },
+  { name: 'South American Cichlid', body: [138, 154, 91],  fin: [107, 122, 68],  pattern: 'blotches',     pc: [83, 95, 56],    shape: 'standard', size: 40, speed: 0.60, iscale: 0.58, band: [0.14, 0.80], row: 'RRRYYRRRYRRRRYRYRYRRRRRRR' },
+  { name: 'Cory Catfish',           body: [193, 154, 107], fin: [160, 124, 80],  pattern: 'spots',        pc: [136, 104, 64],  shape: 'cat',      size: 30, speed: 0.60, iscale: 0.66, band: [0.58, 0.86], row: 'GGGRRGGGYRGGRGGRGGGGGGGYG' },
+  { name: 'Danio / Minnow',         body: [184, 207, 224], fin: [141, 174, 198], pattern: 'hstripes',     pc: [44, 71, 99],    shape: 'slim',     size: 28, speed: 1.10, iscale: 0.70, band: [0.10, 0.55], row: 'GGGRRGGRYRGGRGGRGGGGGGGYG' },
+  { name: 'Discus',                 body: [232, 134, 46],  fin: [199, 104, 28],  pattern: 'vstripesThin', pc: [31, 143, 122],  shape: 'round',    size: 42, speed: 0.35, iscale: 0.55, band: [0.14, 0.80], row: 'RYRRRGRGYRYRRYGRGGGGYGGYG' },
+  { name: 'Eel',                    body: [95, 114, 100],  fin: [72, 88, 77],    pattern: 'bands',        pc: [55, 68, 58],    shape: 'eel',      size: 40, speed: 0.50, iscale: 0.60, band: [0.60, 0.84], row: 'YYRYYYYYYRYYRYYYYYYYYYYRG' },
+  { name: 'Goldfish',               body: [243, 156, 44],  fin: [247, 181, 86],  pattern: 'none',         pc: [0, 0, 0],       shape: 'flow',     size: 38, speed: 0.50, iscale: 0.55, band: [0.14, 0.82], row: 'RRRRRRRRRGRRGYRRRRRRRRRRG' },
+  { name: 'Gourami',                body: [201, 182, 217], fin: [165, 145, 187], pattern: 'spots',        pc: [244, 238, 250], shape: 'standard', size: 34, speed: 0.45, iscale: 0.62, band: [0.12, 0.78], row: 'GGRRRGGYYRYYRGGRGGGGGGGYG' },
+  { name: 'Guppy',                  body: [79, 195, 161],  fin: [242, 140, 59],  pattern: 'tailspots',    pc: [211, 84, 0],    shape: 'slim',     size: 24, speed: 1.00, iscale: 0.78, band: [0.12, 0.78], row: 'RYGRRGGRYRYGRGGRGGGGYGGYG' },
+  { name: 'Koi',                    body: [238, 238, 242], fin: [222, 180, 158], pattern: 'blotches',     pc: [198, 60, 48],   shape: 'flow',     size: 48, speed: 0.40, iscale: 0.50, band: [0.20, 0.80], row: 'RRRRRRRRRGRRGYRRRYRRRRRRG' },
+  { name: 'Loach',                  body: [235, 150, 60],  fin: [210, 125, 45],  pattern: 'vstripes',     pc: [40, 36, 34],    shape: 'standard', size: 36, speed: 0.60, iscale: 0.60, band: [0.42, 0.86], row: 'GGYYYGGYYYGGYGGRGGGGGGGYG' },
+  { name: 'Molly',                  body: [42, 44, 52],    fin: [72, 76, 88],    pattern: 'none',         pc: [0, 0, 0],       shape: 'standard', size: 30, speed: 0.70, iscale: 0.66, band: [0.14, 0.80], row: 'GGGRRGGGYRGGRGGRGGGGGGGYG' },
+  { name: 'Oscar',                  body: [90, 76, 86],    fin: [70, 58, 66],    pattern: 'blotches',     pc: [198, 100, 64],  shape: 'standard', size: 46, speed: 0.45, iscale: 0.52, band: [0.25, 0.85], row: 'RRRYYRRRYRRRRRRYRYRRRRRRR' },
+  { name: 'Platy',                  body: [235, 130, 90],  fin: [210, 105, 70],  pattern: 'none',         pc: [0, 0, 0],       shape: 'slim',     size: 24, speed: 0.90, iscale: 0.78, band: [0.14, 0.78], row: 'GGGRRGGGYRGGRGGRGGGGGGGYG' },
+  { name: 'Pleco',                  body: [92, 76, 58],    fin: [72, 58, 44],    pattern: 'spots',        pc: [142, 120, 96],  shape: 'cat',      size: 42, speed: 0.40, iscale: 0.55, band: [0.60, 0.88], row: 'GGGYYGGGYRGGYGGYGGGGGGGYR' },
+  { name: 'Rainbowfish',            body: [96, 130, 214],  fin: [128, 158, 230], pattern: 'hstripes',     pc: [240, 220, 140], shape: 'slim',     size: 30, speed: 0.95, iscale: 0.68, band: [0.10, 0.50], row: 'GGGRRGGGYRGGRGGRGGGGGGGYG' },
+  { name: 'Rasbora',                body: [214, 138, 120], fin: [190, 110, 100], pattern: 'blotches',     pc: [45, 45, 55],    shape: 'slim',     size: 24, speed: 1.05, iscale: 0.78, band: [0.12, 0.55], row: 'GGGRRGGGYRGGRGGRGGGGGGGYG' },
+  { name: 'Shark',                  body: [186, 196, 206], fin: [122, 134, 146], pattern: 'none',         pc: [0, 0, 0],       shape: 'slim',     size: 44, speed: 1.00, iscale: 0.52, band: [0.20, 0.75], row: 'GGRYRGGYYRGYRGGRGGGGGGGYG' },
+  { name: 'Swordtail',              body: [130, 168, 118], fin: [160, 190, 150], pattern: 'none',         pc: [0, 0, 0],       shape: 'slim',     size: 30, speed: 0.85, iscale: 0.66, band: [0.14, 0.78], row: 'GGGRRGGGYRGGRGGRGGGGGGGYG' },
+  { name: 'Tetra',                  body: [70, 170, 210],  fin: [222, 88, 82],   pattern: 'none',         pc: [0, 0, 0],       shape: 'slim',     size: 22, speed: 1.15, iscale: 0.82, band: [0.12, 0.55], row: 'GGGRRGGGYRGGRGGRGGGGGGGYG' },
+  { name: 'Shrimp / Crab',          body: [235, 120, 90],  fin: [200, 90, 70],   pattern: 'bands',        pc: [190, 75, 60],   shape: 'shrimp',   size: 30, speed: 0.45, iscale: 0.80, band: [0.62, 0.90], row: 'YYYYRYYYRRYYRYYRYYYYYYYYG' },
+  { name: 'Plants',                 body: [58, 125, 80],   fin: [82, 152, 102],  pattern: 'none',         pc: [0, 0, 0],       shape: 'plant',    size: 40, speed: 0,    iscale: 0.75, band: [0.72, 0.92], row: 'GGGGRGGGGGGGGGGRGRGGGGGGG' }
 ];
 
 const BODY = {
@@ -100,6 +113,9 @@ function drawTail(g, sp, jx, wig, amp) {
     fl(g, sp.fin, 235);
     g.triangle(jx + 2, 0, jx - s * 0.50, -s * 0.26 + wig * amp, jx - s * 0.40, -s * 0.02 + wig * amp * 0.5);
     g.triangle(jx + 2, 0, jx - s * 0.50, s * 0.26 + wig * amp, jx - s * 0.40, s * 0.02 + wig * amp * 0.5);
+    if (sp.name === 'Swordtail') {
+      g.triangle(jx + s * 0.06, s * 0.10, jx - s * 0.62, s * 0.17, jx + s * 0.06, s * 0.20);
+    }
   }
 }
 
@@ -141,6 +157,48 @@ function drawPattern(g, sp) {
   }
 }
 
+function drawShrimpTank(g, sp, wig, amp) {
+  const u = sp.size / 13;
+  const sway = wig * amp * u;
+  g.noStroke();
+  const pts = [[-6, -3, 1.6], [-4, -4.6, 2.2], [-1.5, -5.2, 2.6], [1, -4.8, 2.9], [3, -3.2, 3.1], [4.6, -1.2, 3.2]];
+  pts.forEach(([px, py, pr], i) => {
+    fl(g, i % 2 === 1 ? sp.pc : sp.body);
+    g.ellipse(px * u, py * u, pr * 2 * u);
+  });
+  fl(g, sp.fin, 235);
+  g.triangle(-6.4 * u, -1.6 * u, -9.5 * u, -3.6 * u + sway * 0.4, -8.4 * u, -0.4 * u);
+  g.triangle(-6.4 * u, -1.6 * u, -9.8 * u, -0.8 * u + sway * 0.3, -8.5 * u, 0.9 * u);
+  drawEye(g, 5.4 * u, -2.4 * u, 20);
+  g.stroke(sp.fin[0], sp.fin[1], sp.fin[2]);
+  g.strokeWeight(0.5 * u);
+  g.noFill();
+  g.bezier(5.5 * u, -2.2 * u, 8 * u, -4.5 * u + sway, 9.6 * u, -5.4 * u + sway, 11 * u, -6 * u + sway);
+  g.bezier(5.8 * u, -1.2 * u, 8.6 * u, -1.8 * u + sway * 0.6, 10.2 * u, -1.6 * u + sway * 0.6, 11.4 * u, -1.8 * u + sway * 0.6);
+  g.strokeWeight(0.4 * u);
+  g.line(-3 * u, -0.6 * u, -3.5 * u, 1.8 * u);
+  g.line(-1 * u, -0.2 * u, -1.4 * u, 2 * u);
+  g.line(1 * u, 0, 0.6 * u, 2.2 * u);
+  g.noStroke();
+}
+
+function drawPlantTank(g, sp, t, phase) {
+  const u = sp.size / 20;
+  g.noFill();
+  for (let i = 0; i < 5; i++) {
+    const bx = (i - 2) * 1.7 * u;
+    const h = (7 + (i % 3) * 1.7) * u;
+    const sway = Math.sin(t * 0.9 + i * 1.15 + phase) * u * (0.9 + 0.15 * i);
+    g.stroke(sp.body[0], sp.body[1], sp.body[2], i % 2 === 0 ? 255 : 230);
+    g.strokeWeight((2.3 - i * 0.28) * u);
+    g.bezier(bx, 7 * u, bx - sway * 0.3, 7 * u - h * 0.5, bx + sway * 0.4, 7 * u - h * 0.85, bx + sway, 7 * u - h);
+  }
+  g.noStroke();
+  g.fill(142, 132, 122);
+  g.ellipse(0, 7.3 * u, 5.2 * u, 1.7 * u);
+  g.ellipse(2.4 * u, 7.8 * u, 3.1 * u, 1.2 * u);
+}
+
 function drawEye(g, ex, ey, s) {
   g.noStroke();
   g.fill(245, 250, 253);
@@ -152,7 +210,7 @@ function drawEye(g, ex, ey, s) {
 }
 
 function drawFish(g, sp, wig, amp) {
-  if (sp.shape === 'eel') return;
+  if (sp.shape === 'eel' || sp.shape === 'shrimp' || sp.shape === 'plant') return;
   const s = sp.size;
   const { rx, ry } = bodyDims(sp);
   const jx = -rx * 0.82;
@@ -221,6 +279,7 @@ class Fish {
   update(p, t) {
     if (this.grabbed) return;
     const sp = SPECIES[this.si];
+    if (sp.speed === 0) return;
     const h = p.height;
     this.a += (p.noise(this.seed, t * 0.35) - 0.5) * 0.14;
     const v = sp.speed * 1.25 * (0.7 + 0.3 * Math.sin(t * 0.8 + this.phase));
@@ -238,6 +297,15 @@ class Fish {
 
   draw(p, t, ghosted) {
     const sp = SPECIES[this.si];
+    if (sp.shape === 'plant') {
+      p.push();
+      p.translate(this.x, this.y);
+      if (ghosted) p.drawingContext.globalAlpha = 0.45;
+      drawPlantTank(p, sp, t, this.phase);
+      p.drawingContext.globalAlpha = 1;
+      p.pop();
+      return;
+    }
     p.push();
     p.translate(this.x, this.y);
     p.rotate(this.a);
@@ -245,6 +313,8 @@ class Fish {
     if (ghosted) p.drawingContext.globalAlpha = 0.45;
     if (sp.shape === 'eel') {
       drawEel(p, sp, t, this.phase);
+    } else if (sp.shape === 'shrimp') {
+      drawShrimpTank(p, sp, Math.sin(t * 6 + this.phase), this.grabbed ? 1.7 : 1);
     } else {
       const ws = this.grabbed ? 14 : sp.speed * 4 + 3;
       const amp = sp.size * (this.grabbed ? 0.24 : 0.14);
@@ -503,6 +573,9 @@ function iconTail(g, sp, rx) {
   } else {
     g.triangle(-rx + 3, 0, -rx - 9, -8, -rx - 5, 0);
     g.triangle(-rx + 3, 0, -rx - 9, 8, -rx - 5, 0);
+    if (sp.name === 'Swordtail') {
+      g.triangle(-rx + 4, 2, -rx - 11, 5, -rx + 4, 7);
+    }
   }
 }
 
@@ -518,6 +591,15 @@ function drawSimpleIcon(g, sp) {
     fl(g, sp.body);
     g.ellipse(17, 0.5, 10);
     drawEye(g, 19, -1.5, 24);
+    return;
+  }
+  if (sp.shape === 'shrimp') {
+    drawShrimpTank(g, sp, 0.4, 1);
+    return;
+  }
+  if (sp.shape === 'plant') {
+    g.translate(0, 5);
+    drawPlantTank(g, sp, 0.4, 0);
     return;
   }
   const { rx, ry } = ICON_SHAPE[sp.shape];
