@@ -49,6 +49,8 @@ let draggingFish = null;
 let hoverFish = null;
 let spawn = null;
 let highlight = null;
+let reportOpen = false;
+let reportBox = null;
 let lastClientX = 0;
 let lastClientY = 0;
 let canvasEl = null;
@@ -529,6 +531,103 @@ function drawTally(p, f) {
   p.text(label, x + 9, yy + 10.5);
 }
 
+function fitText(p, s, maxW) {
+  if (p.textWidth(s) <= maxW) return s;
+  let t = s;
+  while (t.length > 1 && p.textWidth(t + '…') > maxW) t = t.slice(0, -1);
+  return t + '…';
+}
+
+function drawTankReport(p) {
+  const pairs = pairList();
+  const order = { R: 0, Y: 1, G: 2 };
+  const sorted = pairs.slice().sort((a, b) => order[a.v] - order[b.v]);
+  const counts = { G: 0, Y: 0, R: 0 };
+  for (const pr of pairs) counts[pr.v]++;
+
+  const w = Math.min(256, Math.max(190, p.width * 0.3));
+  const headH = 36;
+  const rowH = 15;
+  const maxRows = 8;
+  const shown = reportOpen ? sorted.slice(0, maxRows) : sorted.slice(0, 1);
+  const extra = reportOpen ? Math.max(0, sorted.length - shown.length) : 0;
+  const h = headH + 8 + shown.length * rowH + (extra > 0 ? 13 : 0) + (pairs.length === 0 ? 14 : 0);
+  const x = p.width - w - 12;
+  const y = p.height - h - 12;
+  reportBox = { x, y, w, h };
+
+  p.push();
+  p.noStroke();
+  p.fill(6, 20, 32, 195);
+  p.rect(x, y, w, h, 10);
+  p.stroke(255, 255, 255, 28);
+  p.noFill();
+  p.rect(x, y, w, h, 10);
+  p.noStroke();
+
+  p.fill(235, 245, 252, 220);
+  p.textSize(9);
+  p.textStyle(p.BOLD);
+  p.textAlign(p.LEFT, p.TOP);
+  p.text('TANK REPORT', x + 10, y + 8);
+  p.textStyle(p.NORMAL);
+
+  let cx = x + 10;
+  const cy = y + 22;
+  const chip = (v, col) => {
+    const label = String(counts[v]);
+    p.fill(col[0], col[1], col[2]);
+    p.ellipse(cx + 3, cy + 4, 6);
+    p.fill(235, 245, 252, 200);
+    p.textSize(9);
+    p.textAlign(p.LEFT, p.TOP);
+    p.text(label, cx + 9, cy);
+    cx += 16 + p.textWidth(label) + 5;
+  };
+  chip('G', VERDICTS.G.color);
+  chip('Y', VERDICTS.Y.color);
+  chip('R', VERDICTS.R.color);
+
+  p.fill(235, 245, 252, 160);
+  const chx = x + w - 15;
+  const chy = y + 13;
+  if (reportOpen) p.triangle(chx - 4, chy + 4, chx + 4, chy + 4, chx, chy - 2);
+  else p.triangle(chx - 4, chy - 1, chx + 4, chy - 1, chx, chy + 5);
+
+  if (pairs.length === 0) {
+    p.fill(235, 245, 252, 110);
+    p.textSize(9.5);
+    p.textAlign(p.LEFT, p.TOP);
+    p.text('Add at least two fish…', x + 10, y + headH + 2);
+  } else {
+    let ry = y + headH + 2;
+    for (const pr of shown) {
+      const c = VERDICTS[pr.v].color;
+      p.fill(c[0], c[1], c[2]);
+      p.ellipse(x + 13, ry + 5, 5.5);
+      p.textSize(9.5);
+      p.textStyle(pr.v === 'G' ? p.NORMAL : p.BOLD);
+      p.fill(235, 245, 252, pr.v === 'G' ? 165 : 230);
+      p.textAlign(p.LEFT, p.TOP);
+      const nameStr = SPECIES[pr.a.si].name + ' × ' + SPECIES[pr.b.si].name;
+      p.text(fitText(p, nameStr, w - 92), x + 22, ry);
+      p.textStyle(p.NORMAL);
+      p.textSize(8.5);
+      p.fill(c[0], c[1], c[2], 235);
+      p.textAlign(p.RIGHT, p.TOP);
+      p.text(pr.same ? 'Shoal' : VERDICTS[pr.v].label, x + w - 10, ry + 1);
+      ry += rowH;
+    }
+    if (extra > 0) {
+      p.fill(235, 245, 252, 110);
+      p.textSize(8.5);
+      p.textAlign(p.LEFT, p.TOP);
+      p.text('+' + extra + ' more — see side panel', x + 22, ry + 2);
+    }
+  }
+  p.pop();
+}
+
 function overPanel() {
   const r = document.getElementById('panel').getBoundingClientRect();
   return lastClientX >= r.left && lastClientX <= r.right && lastClientY >= r.top && lastClientY <= r.bottom;
@@ -824,10 +923,17 @@ const sketch = (p) => {
       p.text('Click a fish card to add it at random, or drag to place it', p.width / 2, p.height * 0.42 + 24);
       p.pop();
     }
+
+    drawTankReport(p);
   };
 
   p.mousePressed = () => {
     if (p.mouseX < 0 || p.mouseY < 0 || p.mouseX > p.width || p.mouseY > p.height) return;
+    if (reportBox && p.mouseX >= reportBox.x && p.mouseX <= reportBox.x + reportBox.w &&
+        p.mouseY >= reportBox.y && p.mouseY <= reportBox.y + reportBox.h) {
+      reportOpen = !reportOpen;
+      return;
+    }
     const f = fishAt(p.mouseX, p.mouseY);
     if (f) {
       draggingFish = f;
@@ -853,6 +959,8 @@ const sketch = (p) => {
   };
 
   p.doubleClicked = () => {
+    if (reportBox && p.mouseX >= reportBox.x && p.mouseX <= reportBox.x + reportBox.w &&
+        p.mouseY >= reportBox.y && p.mouseY <= reportBox.y + reportBox.h) return;
     const f = fishAt(p.mouseX, p.mouseY);
     if (f) removeFish(f, true);
   };
