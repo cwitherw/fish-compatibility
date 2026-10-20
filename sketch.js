@@ -54,6 +54,11 @@ let reportBox = null;
 let lastClientX = 0;
 let lastClientY = 0;
 let canvasEl = null;
+let aquinoFont = null;
+let SCENE = null;
+let bgLayer = null;
+let bgW = 0;
+let bgH = 0;
 
 function compat(i, j) {
   return i === j ? 'G' : SPECIES[i].row[j];
@@ -343,6 +348,7 @@ function addFish(si, x, y) {
   const fy = Math.max(y0 - 10, Math.min(y1 + 10, y));
   fishes.push(new Fish(si, fx, fy));
   ripples.push({ x: fx, y: fy, r: 4, a: 150 });
+  if (window.FishAudio) FishAudio.drop();
   updateHUD();
 }
 
@@ -422,46 +428,455 @@ function updateHUD() {
   }
 }
 
-function drawWater(p, t) {
+const CORAL_COLORS = [
+  [247, 120, 86], [255, 150, 110], [233, 90, 120], [198, 92, 168],
+  [255, 196, 96], [120, 205, 168], [255, 120, 150], [250, 224, 120],
+  [126, 168, 224]
+];
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function bez(x0, y0, x1, y1, x2, y2, x3, y3, t) {
+  const mt = 1 - t;
+  const a = mt * mt * mt, b = 3 * mt * mt * t, c = 3 * mt * t * t, d = t * t * t;
+  return { x: a * x0 + b * x1 + c * x2 + d * x3, y: a * y0 + b * y1 + c * y2 + d * y3 };
+}
+
+function buildScene() {
+  const r = mulberry32(0x51ed270b);
+  const pick = arr => arr[Math.floor(r() * arr.length)];
+  const S = { kelp: [], swayers: [], corals: [], rocks: [], pebbles: [], mounds: [], ship: null };
+
+  for (const c of [[0.24, 0.92], [0.72, 1.0]]) {
+    S.mounds.push({ x: c[0], y: c[1], rx: 0.7 + r() * 0.3, ry: 0.3 + r() * 0.12, tone: r() });
+  }
+
+  const kelpClusters = [0.035, 0.08, 0.135, 0.9, 0.95, 0.86];
+  for (const cc of kelpClusters) {
+    const n = 4 + Math.floor(r() * 3);
+    for (let i = 0; i < n; i++) {
+      S.kelp.push({
+        x: cc + (r() - 0.5) * 0.035,
+        hgt: 0.30 + r() * 0.42,
+        wdt: 0.006 + r() * 0.007,
+        phase: r() * Math.PI * 2,
+        spd: 0.4 + r() * 0.5,
+        green: 0.5 + r() * 0.5,
+        leaves: 4 + Math.floor(r() * 5),
+        front: r() < 0.5
+      });
+    }
+  }
+
+  const coralSpots = [0.05, 0.12, 0.2, 0.27, 0.34, 0.41, 0.5, 0.58, 0.66, 0.74, 0.82, 0.9, 0.96];
+  for (const sx of coralSpots) {
+    S.corals.push({
+      x: sx + (r() - 0.5) * 0.03,
+      type: pick(['branch', 'branch', 'brain', 'tube', 'fan', 'soft']),
+      scale: 0.7 + r() * 0.7,
+      col: pick(CORAL_COLORS),
+      seed: Math.floor(r() * 1e9),
+      y: 0.9 + r() * 0.05
+    });
+  }
+
+  const fanSpots = [0.16, 0.31, 0.46, 0.6, 0.71, 0.88];
+  for (const sx of fanSpots) {
+    S.swayers.push({
+      x: sx + (r() - 0.5) * 0.03,
+      type: r() < 0.5 ? 'fan' : 'anemone',
+      phase: r() * Math.PI * 2,
+      scale: 0.7 + r() * 0.6,
+      col: pick(CORAL_COLORS),
+      spd: 0.5 + r() * 0.5,
+      y: 0.93 + r() * 0.04
+    });
+  }
+
+  for (let i = 0; i < 6; i++) {
+    S.rocks.push({ x: r(), y: 0.9 + r() * 0.06, rx: 0.05 + r() * 0.08, ry: 0.03 + r() * 0.05, tone: r() });
+  }
+  for (let i = 0; i < 16; i++) {
+    S.pebbles.push({ x: r(), y: 0.93 + r() * 0.05, r: 0.008 + r() * 0.02, tone: r() });
+  }
+
+  S.ship = { x: 0.62, y: 0.83, tilt: -0.11, u: 0.17 };
+  return S;
+}
+
+function ensureScene(p, force) {
+  if (!SCENE) SCENE = buildScene();
   const w = p.width, h = p.height;
-  const ctx = p.drawingContext;
+  if (bgLayer && bgW === w && bgH === h && !force) return;
+  if (bgLayer) bgLayer.remove();
+  bgLayer = p.createGraphics(w, h);
+  bgW = w; bgH = h;
+  bakeBackground(bgLayer, w, h, SCENE);
+}
+
+function bakeBackground(g, w, h, S) {
+  const ctx = g.drawingContext;
+  g.clear();
   const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, '#7fd0f0');
-  grad.addColorStop(0.45, '#3d93c4');
-  grad.addColorStop(1, '#14507a');
+  grad.addColorStop(0, '#8fdaf3');
+  grad.addColorStop(0.32, '#4a9dcb');
+  grad.addColorStop(0.66, '#1f6893');
+  grad.addColorStop(1, '#0d3a5c');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, w, h);
 
-  p.noStroke();
-  p.fill(255, 255, 255, 9);
-  for (let k = 0; k < 3; k++) {
-    const bx = w * (0.22 + 0.3 * k) + Math.sin(t * 0.25 + k * 2.1) * 34;
-    p.quad(bx - 24, 0, bx + 54, 0, bx - 66, h, bx - 140, h);
+  g.noStroke();
+  for (const m of S.mounds) {
+    const c = m.tone < 0.5 ? [26, 86, 116] : [22, 74, 104];
+    g.fill(c[0], c[1], c[2], 120);
+    g.ellipse(w * m.x, h * m.y, w * m.rx, h * m.ry);
   }
 
-  p.fill(226, 201, 146);
-  p.ellipse(w * 0.5, h * 1.08, w * 1.5, h * 0.38);
-  p.fill(206, 178, 122);
-  p.ellipse(w * 0.16, h * 0.925, w * 0.07, h * 0.028);
-  p.ellipse(w * 0.22, h * 0.945, w * 0.05, h * 0.02);
-  p.ellipse(w * 0.86, h * 0.935, w * 0.06, h * 0.024);
-  p.ellipse(w * 0.81, h * 0.95, w * 0.04, h * 0.016);
+  drawShip(g, S.ship, w, h);
 
-  const clusters = [[0.06, 1], [0.115, 2], [0.9, 1], [0.955, 2]];
-  for (const [cx, kind] of clusters) {
-    const baseX = w * cx;
-    const col = kind === 1 ? [46, 139, 87] : [42, 148, 133];
-    for (let j = 0; j < 5; j++) {
-      const sway = Math.sin(t * 0.9 + j * 1.3 + cx * 8) * 8;
-      const bx = baseX + j * 7;
-      const bh = h * (0.16 + (j % 3) * 0.035);
-      p.noFill();
-      p.stroke(col[0], col[1], col[2], 200);
-      p.strokeWeight(4.5 - j * 0.5);
-      p.bezier(bx, h * 0.96, bx - sway * 0.4, h * 0.96 - bh * 0.5, bx + sway * 0.5, h * 0.96 - bh * 0.8, bx + sway, h * 0.96 - bh);
+  g.noStroke();
+  g.fill(214, 188, 132);
+  g.ellipse(w * 0.5, h * 1.08, w * 1.7, h * 0.46);
+  g.fill(228, 205, 152);
+  g.ellipse(w * 0.5, h * 1.06, w * 1.55, h * 0.4);
+  g.fill(240, 220, 172, 170);
+  g.ellipse(w * 0.45, h * 1.05, w * 1.2, h * 0.3);
+
+  g.fill(222, 198, 142);
+  g.ellipse(w * S.ship.x - w * 0.06, h * (S.ship.y + 0.05), w * 0.28, h * 0.09);
+  g.ellipse(w * S.ship.x + w * 0.06, h * (S.ship.y + 0.06), w * 0.22, h * 0.09);
+
+  for (const rk of S.rocks) {
+    const base = 70 + rk.tone * 40;
+    g.noStroke();
+    g.fill(base, base + 8, base + 14);
+    g.ellipse(w * rk.x, h * rk.y, w * rk.rx, h * rk.ry);
+    g.fill(base + 24, base + 32, base + 38, 160);
+    g.ellipse(w * rk.x - w * rk.rx * 0.15, h * rk.y - h * rk.ry * 0.2, w * rk.rx * 0.6, h * rk.ry * 0.5);
+  }
+
+  for (const c of S.corals) drawCoral(g, c, w, h);
+
+  for (const pb of S.pebbles) {
+    const b = 150 + pb.tone * 50;
+    g.noStroke();
+    g.fill(b, b - 8, b - 28);
+    g.ellipse(w * pb.x, h * pb.y, w * pb.r, w * pb.r * 0.7);
+  }
+
+  const glow = ctx.createRadialGradient(w * 0.5, -h * 0.1, h * 0.05, w * 0.5, -h * 0.1, h * 0.9);
+  glow.addColorStop(0, 'rgba(255,255,240,0.35)');
+  glow.addColorStop(1, 'rgba(255,255,240,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, w, h * 0.7);
+
+  const vig = ctx.createRadialGradient(w * 0.5, h * 0.5, Math.min(w, h) * 0.3, w * 0.5, h * 0.5, Math.max(w, h) * 0.75);
+  vig.addColorStop(0, 'rgba(0,0,0,0)');
+  vig.addColorStop(1, 'rgba(2,16,28,0.5)');
+  ctx.fillStyle = vig;
+  ctx.fillRect(0, 0, w, h);
+}
+
+function drawMast(ctx, x, y, len, thick, lean, flag) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(lean);
+  ctx.fillStyle = 'rgba(60,45,34,1)';
+  ctx.fillRect(-thick / 2, -len, thick, len);
+  ctx.strokeStyle = 'rgba(38,27,19,1)';
+  ctx.lineWidth = Math.max(1, thick * 0.3);
+  ctx.strokeRect(-thick / 2, -len, thick, len);
+
+  const yards = flag ? [0.78, 0.52, 0.28] : [0.62];
+  for (let k = 0; k < yards.length; k++) {
+    const yy = -len * yards[k];
+    const half = len * (0.34 - k * 0.06);
+    ctx.fillStyle = 'rgba(58,44,33,1)';
+    ctx.fillRect(-half, yy - thick * 0.28, half * 2, thick * 0.56);
+    const drop = len * 0.2;
+    const seg = 7;
+    ctx.beginPath();
+    ctx.moveTo(-half, yy);
+    ctx.lineTo(half, yy);
+    ctx.lineTo(half * 0.92, yy + drop);
+    for (let i = seg - 1; i >= 0; i--) {
+      const xx = -half + 2 * half * (i / seg);
+      const yyb = yy + drop - (i % 2 === 0 ? 0 : drop * 0.5) - Math.abs(Math.sin(i * 1.9)) * drop * 0.25;
+      ctx.lineTo(xx, yyb);
     }
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(226,220,205,0.5)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(150,140,120,0.5)';
+    ctx.lineWidth = Math.max(1, thick * 0.22);
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle = 'rgba(214,214,206,0.3)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, -len); ctx.lineTo(-len * 0.5, 0);
+  ctx.moveTo(0, -len); ctx.lineTo(len * 0.5, 0);
+  ctx.stroke();
+
+  if (flag) {
+    ctx.fillStyle = 'rgba(18,18,22,0.95)';
+    ctx.beginPath();
+    ctx.moveTo(thick * 0.5, -len);
+    ctx.lineTo(thick * 0.5 + len * 0.26, -len + len * 0.03);
+    ctx.lineTo(thick * 0.5 + len * 0.2, -len + len * 0.13);
+    ctx.lineTo(thick * 0.5, -len + len * 0.17);
+    ctx.closePath();
+    ctx.fill();
+    const fx = thick * 0.5 + len * 0.11, fy = -len + len * 0.075;
+    const s = Math.max(1, len * 0.016);
+    ctx.fillStyle = 'rgba(236,236,236,0.95)';
+    ctx.beginPath(); ctx.arc(fx - s * 2, fy, s, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(fx + s * 2, fy, s, 0, Math.PI * 2); ctx.fill();
+    ctx.fillRect(fx - s * 3, fy + s * 1.6, s * 6, s * 1.4);
+  }
+  ctx.restore();
+}
+
+function drawShip(g, ship, w, h) {
+  const ctx = g.drawingContext;
+  const cx = w * ship.x, cy = h * ship.y;
+  const u = Math.min(w, h) * ship.u;
+
+  g.noStroke();
+  g.fill(6, 30, 46, 90);
+  g.ellipse(cx, h * 0.95, u * 2.6, u * 0.5);
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(ship.tilt);
+
+  drawMast(ctx, -0.18 * u, -0.32 * u, 2.25 * u, 0.07 * u, -0.04, true);
+  drawMast(ctx, 0.55 * u, -0.3 * u, 1.3 * u, 0.055 * u, 0.07, false);
+
+  ctx.beginPath();
+  ctx.moveTo(-1.05 * u, -0.34 * u);
+  ctx.quadraticCurveTo(-1.16 * u, -0.04 * u, -0.96 * u, 0.22 * u);
+  ctx.lineTo(0.9 * u, 0.24 * u);
+  ctx.quadraticCurveTo(1.2 * u, 0.15 * u, 1.18 * u, -0.52 * u);
+  ctx.lineTo(0.95 * u, -0.46 * u);
+  ctx.quadraticCurveTo(0.15 * u, -0.5 * u, -1.05 * u, -0.34 * u);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(84,58,42,1)';
+  ctx.fill();
+  ctx.lineWidth = Math.max(1.5, u * 0.014);
+  ctx.strokeStyle = 'rgba(44,30,22,1)';
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(52,36,26,0.85)';
+  ctx.lineWidth = Math.max(1, u * 0.008);
+  for (let i = 1; i <= 3; i++) {
+    const yy = -0.28 * u + i * 0.14 * u;
+    ctx.beginPath();
+    ctx.moveTo(-1.0 * u, yy - 0.02 * u);
+    ctx.quadraticCurveTo(0, yy + 0.04 * u, 1.02 * u, yy - 0.06 * u);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = 'rgba(150,110,60,0.9)';
+  ctx.fillRect(-1.02 * u, -0.3 * u, 2.02 * u, 0.05 * u);
+
+  ctx.fillStyle = 'rgba(96,66,44,1)';
+  ctx.fillRect(-0.96 * u, -0.62 * u, 0.7 * u, 0.3 * u);
+  ctx.fillStyle = 'rgba(60,42,30,1)';
+  ctx.fillRect(-0.98 * u, -0.66 * u, 0.74 * u, 0.06 * u);
+  ctx.fillStyle = 'rgba(120,190,205,0.85)';
+  for (let i = 0; i < 2; i++) ctx.fillRect(-0.84 * u + i * 0.28 * u, -0.55 * u, 0.16 * u, 0.16 * u);
+
+  for (let i = 0; i < 5; i++) {
+    const px = -0.55 * u + i * 0.32 * u;
+    ctx.beginPath();
+    ctx.arc(px, -0.02 * u, 0.06 * u, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(26,18,14,1)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(184,162,112,0.85)';
+    ctx.lineWidth = Math.max(1, u * 0.01);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = 'rgba(120,152,108,0.55)';
+  for (let i = 0; i < 11; i++) {
+    const bx = -1.0 * u + i * 0.2 * u;
+    ctx.beginPath();
+    ctx.arc(bx, 0.12 * u + Math.sin(i * 1.3) * 0.02 * u, u * (0.02 + (i % 3) * 0.012), 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+function branch(g, x, y, ang, len, depth, r, col) {
+  const x2 = x + Math.cos(ang) * len;
+  const y2 = y + Math.sin(ang) * len;
+  g.stroke(col[0], col[1], col[2]);
+  g.strokeWeight(Math.max(2, len * 0.26));
+  g.line(x, y, x2, y2);
+  if (depth <= 1) {
+    g.noStroke();
+    g.fill(Math.min(255, col[0] + 70), Math.min(255, col[1] + 70), Math.min(255, col[2] + 70));
+    g.ellipse(x2, y2, len * 0.42);
+    return;
+  }
+  const spread = 0.45 + r() * 0.35;
+  branch(g, x2, y2, ang - spread, len * 0.72, depth - 1, r, col);
+  branch(g, x2, y2, ang + spread, len * 0.72, depth - 1, r, col);
+}
+
+function drawCoral(g, c, w, h) {
+  const x = w * c.x;
+  const baseY = h * c.y;
+  const u = Math.min(w, h) * 0.09 * c.scale;
+  const col = c.col;
+  const r = mulberry32(c.seed);
+  if (c.type === 'brain') {
+    g.noStroke();
+    g.fill(col[0], col[1], col[2]);
+    g.ellipse(x, baseY - u * 0.4, u * 1.8, u * 1.25);
+    g.noFill();
+    g.stroke(col[0] * 0.6, col[1] * 0.6, col[2] * 0.6, 210);
+    g.strokeWeight(2);
+    for (let i = 0; i < 5; i++) {
+      const oy = baseY - u * 0.7 + i * u * 0.18;
+      g.bezier(x - u * 0.8, oy, x - u * 0.2, oy - u * 0.16, x + u * 0.2, oy + u * 0.16, x + u * 0.8, oy);
+    }
+    g.noStroke();
+    g.fill(255, 255, 255, 45);
+    g.ellipse(x - u * 0.3, baseY - u * 0.66, u * 0.7, u * 0.4);
+  } else if (c.type === 'tube') {
+    for (let i = 0; i < 5; i++) {
+      const tx = x + (i - 2) * u * 0.28;
+      const th = u * (0.7 + r() * 0.7);
+      const tw = u * 0.26;
+      g.noStroke();
+      g.fill(col[0], col[1], col[2]);
+      g.rect(tx - tw / 2, baseY - th, tw, th, tw * 0.5);
+      g.fill(col[0] * 0.5, col[1] * 0.5, col[2] * 0.5);
+      g.ellipse(tx, baseY - th, tw * 0.95, tw * 0.5);
+    }
+  } else if (c.type === 'branch') {
+    branch(g, x, baseY, -Math.PI / 2, u * 0.62, 3, r, col);
+    g.noStroke();
+  } else {
+    g.stroke(col[0], col[1], col[2], 220);
+    g.strokeWeight(Math.max(1.5, u * 0.06));
+    const arms = 10;
+    for (let i = 0; i < arms; i++) {
+      const a = -Math.PI / 2 + (i / (arms - 1) - 0.5) * Math.PI * 0.9;
+      const L = u * (0.95 + (i % 2) * 0.15);
+      g.line(x, baseY, x + Math.cos(a) * L, baseY + Math.sin(a) * L);
+    }
+    g.noStroke();
+  }
+}
+
+function drawKelp(p, k, w, h, t) {
+  const x = w * k.x;
+  const baseY = h * 0.95;
+  const H = h * k.hgt;
+  const sway = Math.sin(t * k.spd + k.phase);
+  const gr = k.green;
+  const stem = [28 + gr * 22, 110 + gr * 70, 60 + gr * 30];
+  const topX = x + sway * w * 0.02;
+  const topY = baseY - H;
+  const c1x = x + sway * w * 0.006, c1y = baseY - H * 0.4;
+  const c2x = x + sway * w * 0.02, c2y = baseY - H * 0.75;
+
+  p.noFill();
+  p.stroke(stem[0], stem[1], stem[2], 235);
+  p.strokeWeight(Math.max(2, w * k.wdt));
+  p.bezier(x, baseY, c1x, c1y, c2x, c2y, topX, topY);
+
+  p.noStroke();
+  const leaf = [stem[0] + 24, Math.min(255, stem[1] + 46), stem[2] + 22];
+  for (let i = 1; i <= k.leaves; i++) {
+    const f = i / (k.leaves + 1);
+    const pt = bez(x, baseY, c1x, c1y, c2x, c2y, topX, topY, f);
+    const dir = (i % 2 === 0) ? 1 : -1;
+    const lsw = Math.sin(t * k.spd * 1.7 + k.phase + i);
+    const ll = w * 0.024 * (1.3 - f * 0.6);
+    p.push();
+    p.translate(pt.x, pt.y);
+    p.rotate(dir * (0.9 + lsw * 0.16) + sway * 0.25);
+    p.fill(leaf[0], leaf[1], leaf[2], 225);
+    p.ellipse(dir * ll * 0.55, 0, ll, ll * 0.38);
+    p.pop();
   }
   p.noStroke();
+}
+
+function drawSway(p, s, w, h, t) {
+  const x = w * s.x;
+  const baseY = h * s.y;
+  const u = Math.min(w, h) * 0.085 * s.scale;
+  const sway = Math.sin(t * s.spd + s.phase) * 0.16;
+  const col = s.col;
+  p.push();
+  p.translate(x, baseY);
+  if (s.type === 'fan') {
+    p.rotate(sway * 0.5);
+    p.noFill();
+    p.stroke(col[0], col[1], col[2], 230);
+    p.strokeWeight(Math.max(1.5, u * 0.06));
+    const arms = 12;
+    for (let i = 0; i < arms; i++) {
+      const a = -Math.PI / 2 + (i / (arms - 1) - 0.5) * Math.PI * 0.95 + sway * 0.4;
+      const L = u * (0.95 + (i % 2) * 0.12);
+      const mx = Math.cos(a) * L * 0.5 - u * 0.1;
+      const my = Math.sin(a) * L * 0.5;
+      p.bezier(0, 0, mx, my, Math.cos(a) * L * 0.82, Math.sin(a) * L * 0.86, Math.cos(a) * L, Math.sin(a) * L);
+    }
+    p.noStroke();
+    p.fill(col[0] * 0.7, col[1] * 0.7, col[2] * 0.7);
+    p.ellipse(0, 0, u * 0.42, u * 0.26);
+  } else {
+    p.noStroke();
+    p.fill(col[0] * 0.8, col[1] * 0.8, col[2] * 0.8);
+    p.ellipse(0, -u * 0.15, u * 0.85, u * 0.55);
+    p.stroke(col[0], col[1], col[2], 235);
+    p.strokeWeight(Math.max(1.5, u * 0.05));
+    const n = 18;
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI / 2 + (i / (n - 1) - 0.5) * Math.PI * 1.2;
+      const wob = Math.sin(t * s.spd * 2 + i * 0.6 + s.phase) * 0.22;
+      const L = u * (0.45 + 0.55 * Math.cos((i / (n - 1) - 0.5) * Math.PI));
+      const tx = Math.cos(a + sway + wob) * L;
+      const ty = -u * 0.2 + Math.sin(a + sway + wob) * L;
+      p.line(Math.cos(a) * u * 0.22, -u * 0.2, tx, ty);
+    }
+    p.noStroke();
+  }
+  p.pop();
+}
+
+function drawWater(p, t) {
+  const w = p.width, h = p.height;
+  ensureScene(p);
+  if (bgLayer) p.image(bgLayer, 0, 0);
+
+  p.noStroke();
+  p.fill(255, 255, 255, 10);
+  for (let k = 0; k < 4; k++) {
+    const bx = w * (0.16 + 0.23 * k) + Math.sin(t * 0.2 + k * 1.7) * 30;
+    const wt = 26 + k * 8;
+    p.quad(bx - wt / 2, 0, bx + wt / 2, 0, bx - 150, h, bx - 210, h);
+  }
+
+  if (!SCENE) return;
+  for (const k of SCENE.kelp) if (!k.front) drawKelp(p, k, w, h, t);
+  for (const s of SCENE.swayers) drawSway(p, s, w, h, t);
+  for (const k of SCENE.kelp) if (k.front) drawKelp(p, k, w, h, t);
 }
 
 function drawWarn(p, x, y) {
@@ -803,6 +1218,8 @@ const sketch = (p) => {
     p.createCanvas(host.clientWidth, host.clientHeight).parent(host);
     canvasEl = p.canvas;
     window['_p'] = p;
+    p.loadFont('fonts/Aquino.ttf', f => { aquinoFont = f; });
+    ensureScene(p);
     for (let i = 0; i < SPECIES.length; i++) ICONS.push(makeIcon(p, i));
     buildStore(p);
     updateHUD();
@@ -811,16 +1228,19 @@ const sketch = (p) => {
   p.windowResized = () => {
     const host = document.getElementById('tank-canvas');
     p.resizeCanvas(host.clientWidth, host.clientHeight);
+    ensureScene(p, true);
   };
 
   p.draw = () => {
     const t = p.millis() / 1000;
+    if (aquinoFont) p.textFont(aquinoFont);
     drawWater(p, t);
 
     if (p.frameCount % 26 === 0 && Math.random() < 0.7) {
       const w = p.width, h = p.height;
       const px = [0.06, 0.115, 0.9, 0.955][Math.floor(Math.random() * 4)] * w;
       bubbles.push({ x: px + (Math.random() - 0.5) * 30, y: h * 0.9, r: 1.5 + Math.random() * 3, v: 0.5 + Math.random() * 0.9, wig: Math.random() * 10 });
+      if (window.FishAudio) FishAudio.bubble(0.6);
     }
 
     if (!draggingFish && !hoverFish) {
@@ -962,7 +1382,7 @@ const sketch = (p) => {
     if (reportBox && p.mouseX >= reportBox.x && p.mouseX <= reportBox.x + reportBox.w &&
         p.mouseY >= reportBox.y && p.mouseY <= reportBox.y + reportBox.h) return;
     const f = fishAt(p.mouseX, p.mouseY);
-    if (f) removeFish(f, true);
+    if (f) { removeFish(f, true); if (window.FishAudio) FishAudio.bubble(1); }
   };
 
   p.mouseMoved = () => {
@@ -1013,6 +1433,7 @@ document.addEventListener('mouseup', e => {
     document.body.classList.remove('grabbing', 'remove-mode');
     if (overPanel()) {
       removeFish(f, true);
+      if (window.FishAudio) FishAudio.bubble(1);
     } else {
       const p5i = window['_p'];
       const [y0, y1] = bandFor(f.si, p5i.height);
@@ -1026,3 +1447,12 @@ document.addEventListener('mouseup', e => {
 document.getElementById('clear').addEventListener('click', () => {
   while (fishes.length > 0) removeFish(fishes[fishes.length - 1], true);
 });
+
+const soundBtn = document.getElementById('sound');
+if (soundBtn) {
+  soundBtn.addEventListener('click', () => {
+    const on = window.FishAudio ? FishAudio.toggle() : false;
+    soundBtn.setAttribute('aria-pressed', String(!!on));
+    soundBtn.textContent = on ? '♪ Underwater music on' : '♪ Play underwater music';
+  });
+}

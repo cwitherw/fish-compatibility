@@ -7,6 +7,8 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<header id="app-header">Aquarium Compatibility</header>
+<div id="app">
 <aside id="panel">
   <header>
     <h1>Fish Friends</h1>
@@ -18,6 +20,8 @@
     <span class="chip"><i class="dot y"></i>Maybe</span>
     <span class="chip"><i class="dot r"></i>Incompatible</span>
   </div>
+
+  <button id="sound" type="button" aria-pressed="false">&#9834; Play underwater music</button>
 
   <h2>Fish Store</h2>
   <div id="store"></div>
@@ -34,9 +38,11 @@
   <div id="banner" class="state-empty">Your tank is empty — add fish from the store</div>
   <div id="tank"><div id="tank-canvas"></div></div>
 </main>
+</div>
 
 <img id="ghost" alt="" hidden>
 <script src="p5.min.js"></script>
+<script src="audio.js"></script>
 <script src="sketch.js"></script>
 </body>
 </html>
